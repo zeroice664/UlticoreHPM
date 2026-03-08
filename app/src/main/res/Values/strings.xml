@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Ulticore HPM</string>
+    <string name="app_name_service">Ulticore Performance Service</string>
+    <string name="perf_mode_on">Performance Mode: ON</string>
+    <string name="perf_mode_off">Performance Mode: OFF</string>
+</resources>
