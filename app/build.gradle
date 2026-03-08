@@ -1,6 +1,4 @@
-// APP-LEVEL build.gradle
-// compileSdkVersion raised to 33 — required by AGP 7.x minimum
-// targetSdkVersion stays 28 — the app still runs on Android 9
+// APP-LEVEL build.gradle — Fixed: Kotlin stdlib duplicate class conflict resolved
 apply plugin: 'com.android.application'
 
 android {
@@ -26,6 +24,26 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+// ── KOTLIN STDLIB CONFLICT RESOLUTION ────────────────────────────────────
+// The problem: AndroidX AppCompat + Jetifier pulls in two different versions
+// of Kotlin's standard library simultaneously:
+//   - kotlin-stdlib:1.8.10       (newer, from current AppCompat)
+//   - kotlin-stdlib-jdk8:1.6.0   (older, introduced by Jetifier translation)
+// Both contain the same class names, so the build fails with "Duplicate class".
+//
+// The fix: Force ALL Kotlin stdlib variants across ALL dependency chains
+// to use the same version (1.8.10), so only one copy ever ends up in the build.
+// This is like telling two delivery services "I only want the 2024 edition,
+// return the 2020 edition regardless of who ordered it."
+configurations.all {
+    resolutionStrategy {
+        force 'org.jetbrains.kotlin:kotlin-stdlib:1.8.10'
+        force 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.10'
+        force 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.10'
+        force 'org.jetbrains.kotlin:kotlin-stdlib-common:1.8.10'
     }
 }
 
