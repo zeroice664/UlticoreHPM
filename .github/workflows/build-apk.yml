@@ -1,7 +1,6 @@
 # ═══════════════════════════════════════════════════════════════
 #  ULTICORE HPM v2.0 — GitHub Actions Automated APK Builder
-#  FIXED VERSION — Uses GitHub pre-installed Android SDK
-#  Java 17 required for modern Android SDK tools
+#  FIXED v3 — Downloads missing gradle-wrapper.jar automatically
 # ═══════════════════════════════════════════════════════════════
 
 name: Build Ulticore HPM APK
@@ -18,22 +17,87 @@ jobs:
 
     steps:
 
+      # ── STEP 1: Download your repository code ──
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # ── STEP 2: Install Java 17 ──
+      #    Required by Google's modern Android SDK tools
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
+      # ── STEP 3: Download the missing Gradle Wrapper JAR ──
+      #    The .jar is a binary engine file that couldn't be
+      #    included in the project as plain text. We fetch it
+      #    directly from Gradle's official GitHub releases.
+      #    Version 6.7.1 matches our gradle-wrapper.properties.
+      - name: Download Gradle Wrapper JAR
+        run: |
+          mkdir -p gradle/wrapper
+          curl -L \
+            -o gradle/wrapper/gradle-wrapper.jar \
+            https://github.com/gradle/gradle/raw/v6.7.1/gradle/wrapper/gradle-wrapper.jar
+          echo "Gradle wrapper JAR downloaded:"
+          ls -lh gradle/wrapper/
+
+      # ── STEP 4: Set Android SDK environment variables ──
+      #    Points Gradle at the SDK already on GitHub's server
       - name: Configure Android SDK path
         run: |
           echo "ANDROID_SDK_ROOT=/usr/local/lib/android/sdk" >> $GITHUB_ENV
           echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> $GITHUB_ENV
 
+      # ── STEP 5: Install Android 28 platform + build tools ──
       - name: Install required Android SDK components
         run: |
+          yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager \
+            --sdk_root=/usr/local/lib/android/sdk \
+            "platform-tools" \
+            "platforms;android-28" \
+            "build-tools;28.0.3" || true
+          yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager \
+            --sdk_root=/usr/local/lib/android/sdk \
+            --licenses || true
+
+      # ── STEP 6: Tell Gradle where the Android SDK lives ──
+      - name: Create local.properties
+        run: echo "sdk.dir=/usr/local/lib/android/sdk" > local.properties
+
+      # ── STEP 7: Make the Gradle wrapper script executable ──
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      # ── STEP 8: Compile the APK ──
+      #    Now that the wrapper JAR exists, ./gradlew can start
+      #    the Gradle engine, compile all Java files, process
+      #    all XML resources, and package the final APK.
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug --stacktrace
+        env:
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+          ANDROID_HOME: /usr/local/lib/android/sdk
+
+      # ── STEP 9: Rename APK to a clear filename ──
+      - name: Rename APK
+        run: |
+          mkdir -p output
+          cp app/build/outputs/apk/debug/*.apk \
+             output/com.ulticore.highperformancemode-2.0.apk
+          echo "✅ APK ready:"
+          ls -lh output/
+
+      # ── STEP 10: Upload APK as a downloadable Artifact ──
+      #    A download button will appear at the bottom of this
+      #    workflow run page once this step completes.
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Ulticore-HPM-v2.0-APK
+          path: output/com.ulticore.highperformancemode-2.0.apk
+          retention-days: 90
           yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager \
             --sdk_root=/usr/local/lib/android/sdk \
             "platform-tools" \
