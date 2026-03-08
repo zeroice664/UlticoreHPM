@@ -9,17 +9,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Java 17 is needed for both Gradle 7.x and modern Android SDK tools
       - uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Install Gradle 6.7.1 directly
+      # Download Gradle 7.4 — first version with full Java 17 support
+      - name: Install Gradle 7.4
         run: |
-          wget -q https://services.gradle.org/distributions/gradle-6.7.1-bin.zip
-          unzip -q gradle-6.7.1-bin.zip
-          echo "$(pwd)/gradle-6.7.1/bin" >> $GITHUB_PATH
+          wget -q https://services.gradle.org/distributions/gradle-7.4-bin.zip
+          unzip -q gradle-7.4-bin.zip
+          echo "$(pwd)/gradle-7.4/bin" >> $GITHUB_PATH
 
+      # Install Android 28 platform and build tools, accept all licenses
       - name: Install Android SDK components
         run: |
           yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager \
@@ -28,6 +31,7 @@ jobs:
             --licenses || true
           echo "sdk.dir=/usr/local/lib/android/sdk" > local.properties
 
+      # Compile all Java source files and package into a debug APK
       - name: Build APK
         run: gradle assembleDebug --stacktrace
         env:
