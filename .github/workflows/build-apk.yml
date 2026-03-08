@@ -47,7 +47,7 @@ jobs:
       #    This sets up the exact same tools Android Studio uses internally.
       #    sdkmanager downloads: build-tools 28.0.3 + platform android-28
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v4
+        uses: android-actions/setup-android@v2
 
       # ── STEP 4: Accept all Android SDK licenses (required by Google) ──
       - name: Accept Android SDK licenses
